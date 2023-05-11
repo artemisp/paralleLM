@@ -1,0 +1,27 @@
+
+#ignore env
+.env
+
+# Ignore __pycache__ directories
+**__pycache__**
+
+# Ignore .pyc files
+*.pyc
+
+# Ignore apex
+**apex**
+
+
+# Ignore cache
+**.cache**
+
+# Ignore wandb files
+**wandb**
+
+# Ignore output files
+**output**
+
+# Ignore predictions files
+**predictions**
+
+**mrqa**

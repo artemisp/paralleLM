@@ -1,0 +1,7 @@
+transformers==4.28.1
+datasets==2.11.0
+tokenizers==0.12.0
+mmcv-lite
+pandas
+python-dotenv
+wandb
