@@ -14,8 +14,8 @@ Here are some examples of runtimes on T5 models per epoch given 2 RTX A6000 GPUS
 | t5-small | closeQA | 471        | 256            | 4 mins     |
 | t5-base  | openQA  | 602        | 200            | 19 mins    |
 | t5-base  | closeQA | 602        | 200            | 14 mins    |
-| t5-large | openQA  | 12360      | 16             | 4.5 hours  |
-| t5-large | closeQA | 12360      | 16             | 3.2 hours  |
+| t5-large | openQA  | 1881       | 64             | 1.2 hours  |
+| t5-large | closeQA | 1881       | 64             | 45 mins    |
 
 You would have to download my preprocessed data to replicate. You can do so as follows:
 ```
