@@ -90,7 +90,7 @@ if cfg.debug:
 ########## MODEL  #########################
 ############################################
 if args.resume_from_checkpoint:
-    model = QAModel(cfg=cfg)#load_from_checkpoint(args.resume_from_checkpoint, cfg=cfg)
+    model = QAModel.load_from_checkpoint(args.resume_from_checkpoint, cfg=cfg)
     data_module = QADataModule(dataset,tokenizer, cfg, batch_size=model.batch_size)
 else:
     ################################
