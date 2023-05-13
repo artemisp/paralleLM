@@ -98,12 +98,8 @@ else:
     ################################
     if 'auto' in [cfg.batch_size, cfg.learning_rate]:
         trainer = Trainer(
-        # accelerator=cfg.accelerator,
-        # strategy=cfg.strategy,
-        # devices=cfg.devices,
-        num_nodes=cfg.num_nodes,
+        devices=1,
         precision=cfg.precision,
-        fast_dev_run=cfg.fast_dev_run,
         max_epochs=1,
         min_epochs=1,
         limit_train_batches=3,
@@ -120,15 +116,12 @@ else:
         deterministic=cfg.deterministic,
         benchmark=cfg.benchmark,
         inference_mode=cfg.inference_mode,
-        use_distributed_sampler=cfg.use_distributed_sampler,
         profiler=cfg.profiler,
         detect_anomaly=cfg.detect_anomaly,
-        barebones=cfg.barebones,
-        plugins=None,
-        sync_batchnorm=cfg.sync_batchnorm,
+        barebones=True,
         reload_dataloaders_every_n_epochs=cfg.reload_dataloaders_every_n_epochs,
         default_root_dir=f'{args.output_dir}_auto',
-        logger=None,
+        logger=False,
         )
         tuner = Tuner(trainer)
 
@@ -205,4 +198,5 @@ trainer = Trainer(
     logger=logger,
     callbacks=callbacks,
     )
-trainer.fit(model, data_module)
+trainer.fit(model, data_module, ckpt_path=args.resume_from_checkpoint if args.resume_from_checkpoint else None)
+
