@@ -6,6 +6,7 @@ from dotenv import load_dotenv
 import ast
 import sys
 import ast
+import torch.distributed as dist
 sys.path.append(os.getcwd())
 
 
@@ -21,24 +22,43 @@ class CustomEvalCallback(Callback):
         from src.predict.utils import generate_and_decode
         from src.data.postprocessing import qa_postproc_answer
         
-        if pl_module.global_rank == 0:  # ensure this only runs on the first process in DDP
-            listify = lambda x: ast.literal_eval(x) if '[' in x and ']' in x else [x]
-            predictions = []
-            targets = []
-            dl = trainer.datamodule.val_dataloader()
-            pl_module.eval()
-            for i,batch in enumerate(dl):  
-                    preds = generate_and_decode(pl_module, input_ids=batch['input_ids'], 
-                        attention_mask=batch['attention_mask'],batch_idx=i)
-                    predictions.extend(preds)
-                    tags = [[normalize_squad(t_) for t_ in u] for u in [listify(t) for t in batch['answer']]]
-                    targets.extend(tags)
-                    if pl_module.cfg.debug:
-                        print(f"targets: {tags}")
-                        print(f"preds: {preds}")
-            predictions = [normalize_squad(qa_postproc_answer(p)) for p in predictions]
-            metrics = qa_metrics(targets, predictions)
-            pl_module.log_dict({f"eval_{k}": v for k,v in metrics.items()})
+        listify = lambda x: ast.literal_eval(x)
+        local_predictions = []
+        local_targets = []
+        
+        dl = trainer.datamodule.val_dataloader()
+        pl_module.eval()
+        
+        for i, batch in enumerate(dl):  
+            preds = generate_and_decode(pl_module, input_ids=batch['input_ids'], 
+                    attention_mask=batch['attention_mask'], batch_idx=i)
+            local_predictions.extend(preds)
+            tags = [[normalize_squad(t_) for t_ in u] for u in [listify(t) for t in batch['answers']]]
+            local_targets.extend(tags)
+            if pl_module.cfg.debug:
+                print(f"targets: {tags}")
+                print(f"preds: {preds}")
+
+        # Convert lists to tensors
+        local_predictions_tensor = torch.tensor(local_predictions).to(pl_module.device)
+        local_targets_tensor = torch.tensor(local_targets).to(pl_module.device)
+        
+        # Gather predictions from all processes
+        global_predictions = [torch.zeros_like(local_predictions_tensor) for _ in range(trainer.world_size)]
+        global_targets = [torch.zeros_like(local_targets_tensor) for _ in range(trainer.world_size)]
+        dist.gather(local_predictions_tensor, gather_list=global_predictions, dst=0)
+        dist.gather(local_targets_tensor, gather_list=global_targets, dst=0)
+        
+        if pl_module.global_rank == 0:
+            # Flatten lists
+            global_predictions = [item for sublist in global_predictions for item in sublist]
+            global_targets = [item for sublist in global_targets for item in sublist]
+            
+            postproc = qa_postproc_answer if not pl_module.cfg.disentqa else disent_qa_postproc_answer
+            global_predictions = [normalize_squad(postproc(p)) for p in global_predictions]
+            metrics = qa_metrics(global_targets, global_predictions)
+            
+            pl_module.log_dict({f"eval_{k}": v for k, v in metrics.items()})
 
 class QAModel(LightningModule):
     """
