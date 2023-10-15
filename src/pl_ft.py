@@ -153,7 +153,8 @@ if cfg.save_top_k > 0:
     save_top_k=cfg.save_top_k, 
     verbose=True, 
     monitor=cfg.monitor, 
-    mode=cfg.mode
+    mode=cfg.mode,
+    save_on_train_epoch_end=True
     )
     callbacks.append(checkpoint_callback)
 

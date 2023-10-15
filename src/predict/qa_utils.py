@@ -23,6 +23,7 @@ import string
 
 from absl import logging
 import numpy as np
+import ast
 
 
 def _normalize_answer(text, punc_chars, punc_repl):
@@ -105,3 +106,15 @@ def qa_metrics(targets, predictions):
   f1 *= 100
   logging.info("EM = %.2f, F1 = %.2f", em, f1)
   return {"em": em, "f1": f1}
+
+
+def listify(x):
+    if "[" in x and "]" in x:
+        try:
+            return ast.literal_eval(x.strip())
+        except:
+            pass
+    if type(x) == list:
+        return x
+    else:
+        return [x.strip()] 
