@@ -145,8 +145,7 @@ else:
 ################################
 ########## Train ################
 ################################
-custom_callback = CustomEvalCallback()
-callbacks = [custom_callback]
+callbacks = []
 if cfg.save_top_k > 0:
     checkpoint_callback = ModelCheckpoint(
     dirpath=args.output_dir,
