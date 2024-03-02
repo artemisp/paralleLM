@@ -225,15 +225,12 @@ Define preprocessing functions here. It is used by `data.pl_dataloaders.CustomDa
 
 
 <a name="config"></a>
-## Configuration
-
+## Configuration  ⚙️
 Okay.. all good till now, but of course you want to take some control. Don't you worry! A lot of the things you would want to do can simply be achieved by changing a single variable in the config! 
 
 Two example configs are provided in 
 * `/nlp/data/artemisp/multigpu-lm-templates/src/configs/train/llama_mrqa.py`
 * `/nlp/data/artemisp/multigpu-lm-templates/src/configs/base.py`
-
-Here is a summary of what each parameter does and some possible alternatives.  
 
 ## General Configuration
 * `output_dir`: Specifies the current working directory of the project. This is used as a base to construct paths for data, outputs, and logs.
@@ -476,3 +473,39 @@ For interractive debugging do the following:
 Create a config which defines `resume_From_checkpoint` which is passed in the `module_kwargs` and also on the top level of the config. Then specify your `metrics` and `output_dir`. Finally, either pass a raw dataset with a `predict` split, or specify your prediction split in `datamodule_kwargs`. 
 
 Run `sbatch src/slurm_scripts/run_predict_1gpu.sh --cfg path/to/your/config` to run on one gpu or select the 4gpu script for faster inference. You can modify the scripts accordingly. 
+
+
+## How to Cite
+
+If you use this project or software in your research or work, please consider citing it. 
+
+```
+@misc{apanagopoulou2024_parallelm,
+  author = {Artemis Panagopoulou},
+  title = {ParalleLM: Distributed Training Templates for NLP Tasks},
+  year = {2024},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/artemisp/paralleLM}},
+  commit = {abc123def},
+  version = {1.0},
+  doi = {},
+}
+```
+
+## Requesting Features or Reporting Issues
+
+We welcome contributions from the community! If you have suggestions for new features or have encountered any issues, please report them using our Issues page:
+
+1. Navigate to the **Issues** tab in our project repository.
+2. Click on **New Issue** to create a new issue.
+3. Provide a detailed description of the feature request or the bug you encountered. Include any relevant details, screenshots, or steps to reproduce the issue.
+4. Submit the issue.
+
+
+## License
+
+## License 📄
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.txt) file for details.
+
