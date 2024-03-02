@@ -1,10 +1,10 @@
 <a name="summary"></a>
-# Distributed Training Templates for NLP Tasks
-This repo hosts a distributed training template for NLP tasks. 
+# 🌍 Distributed Training Templates for NLP Tasks 📚
+This repo hosts a distributed training template for NLP tasks. 🚀
 
 The codebase is based on top of [`PyTorch Lightning`](https://lightning.ai/docs/pytorch/latest/) and [`Huggingface Transformers`](https://huggingface.co/docs/transformers/index). Why you may ask, don't you just use the [`Trainer`](https://huggingface.co/docs/transformers/main_classes/trainer) API of `transformers` for multigpu training? I have found in my experience that it provides little control, and requires a lot of patches that have not been filled. [`Lightning`](https://www.google.com/search?client=safari&rls=en&q=pytorch+lightning&ie=UTF-8&oe=UTF-8) is less automatic, especially for language tasks, but provides more control and robustness in my honest opinion. But, not to worry! You can use tokenizers, models, and datasets from `huggingface` simply by changing the config! :) 
 
-Templates are developed to be compatible with [`balance-my-slurm`](https://github.com/artemisp/balance-my-slurm/tree/main) so check it out! 
+Templates are developed to be compatible with [`balance-my-slurm`](https://github.com/artemisp/balance-my-slurm/tree/main) so check it out! 🧐
 
 An example config file to run is provided in `src/configs/train/llama_mrqa.py`. Make sure to download the data to run it
  You can do so as follows:
@@ -19,32 +19,32 @@ Then you can train the model by:
 ```
 
 <a name="toc"></a>
-## Table of Contents
-1. [Environment Variables](#environment-variables-section)
-2. [Installation](#installation)
-3. [Files and Skeleton](#skeleton)
-4. [Configuration](#config)
-5. [Add your own dataset](#add_ds)
-6. [Train](#train)
-7. [Evaluate](#evaluate)
+## 📑 Table of Contents
+1. [🌐 Environment Variables](#environment-variables-section)
+2. [🔧 Installation](#installation)
+3. [📁 Files and Skeleton](#skeleton)
+4. [⚙️ Configuration](#config)
+5. [➕ Add your own dataset](#add_ds)
+6. [🏋️‍♂️ Train](#train)
+7. [📊 Evaluate](#evaluate)
 
 
 <a name="environment-variables-section"></a>
-## Environment Variables
+## 🌐 Environment Variables
 Update `.env` file
-* Set `DATA_DIR` which is the directory where you will download the relevant data. 
-* Set `WANDB_PROJ_NAME` which is the name of the project in wandb.
-* Set `WANDB_DIR` which is the name of the directory where `wandb` stores its data
-* Set `WANDB_RESUME` (see [documentation](https://docs.wandb.ai/guides/track/environment-variables#optional-environment-variables)) which determines whether wandb runs resume in the same panels.  
-* Set `CACHE_DIR` the cache dir for `transformers` and other caching purposes. 
-* Set `OUTPUT_DIR` the checkpoint and results directory.
-* Set `HF_ACCESS_TOKEN` the huffingface access token for private models. See how to retrieve it [here](https://huggingface.co/docs/hub/en/security-tokens)
+* Set `DATA_DIR` which is the directory where you will download the relevant data. 📂
+* Set `WANDB_PROJ_NAME` which is the name of the project in wandb. 🏷️
+* Set `WANDB_DIR` which is the name of the directory where `wandb` stores its data 🗂️
+* Set `WANDB_RESUME` (see [documentation](https://docs.wandb.ai/guides/track/environment-variables#optional-environment-variables)) which determines whether wandb runs resume in the same panels. 🔄  
+* Set `CACHE_DIR` the cache dir for `transformers` and other caching purposes. 💾
+* Set `OUTPUT_DIR` the checkpoint and results directory. 🎯
+* Set `HF_ACCESS_TOKEN` the huggingface access token for private models. See how to retrieve it [here](https://huggingface.co/docs/hub/en/security-tokens) 🔑
 
 <a name="installation"></a>
-## Installation
-Setting up an environment for multigpu training is no joke! Things break easily if not executed in the correct order. Here you can find step by step instructions on how to set up the environment. 
+## 🔧 Installation
+Setting up an environment for multigpu training is no joke! Things break easily if not executed in the correct order. Here you can find step by step instructions on how to set up the environment. 🛠️
 
-In installing `PyTorch` we assume `CUDA` version 12.0 are compatible with our lab clusters. For other versions see the installation [page](https://pytorch.org/get-started/locally/). 
+In installing `PyTorch` we assume `CUDA` version 12.0 are compatible with our lab clusters. For other versions see the installation [page](https://pytorch.org/get-started/locally/). 🔥
 
 ```
 >> conda create -n test_me python=3.10
@@ -54,11 +54,13 @@ In installing `PyTorch` we assume `CUDA` version 12.0 are compatible with our la
 >> python -m pip install -r requirements.txt
 ```
 
-If you want to use a faster (like a LOT FASTER) package manager built on top of conda (i.e. same commands), I highly recomend [mamba](https://github.com/mamba-org/mamba)! 
+If you want to use a faster (like a LOT FASTER) package manager built on top
+
+ of conda (i.e. same commands), I highly recommend [mamba](https://github.com/mamba-org/mamba)! 🐍
 
 
 <a name="skeleton"></a>
-## Files and Skeleton
+## 📁 Files and Skeleton
 ```
 ├── src
 │   ├── common
@@ -85,7 +87,7 @@ If you want to use a faster (like a LOT FASTER) package manager built on top of 
 Now let's look at each of them in turn:
 
 <a name="data"></a>
-### Data
+### 📊 Data: The Heart of Your NLP Adventure! 🚀
 This module handles dataloading, preprocessing, and post-processing. 
 
 #### `data/pl_dataloaders.py`
@@ -131,7 +133,8 @@ Define postprocessing functions here. They are accesed in `models.pl_module.Cust
 Define preprocessing functions here. It is used by `data.pl_dataloaders.CustomDataModule` for template formatting, and tokenization. The relevant arguments in the config are `preprocessing_kwargs` and `tokenization_kwargs`.
 
 <a name="data"></a>
-### Models
+### Models 🤖
+
 
 #### `models/pl_modules.py`
 *  `CustomModule`: A `lightning` wrapper around a `transformers` model that allows for training in `LoRA` or prefix tuning mode using the implementation from [here](https://github.com/kipgparker/soft-prompt-tuning/blob/main/soft_embedding.py) as well as quantization. It allows for distributed training, and high control of the training processes. The `training_step` method can be adapted for different loss functions if necessary. 
