@@ -10,10 +10,10 @@ if __name__ == "__main__":
     import pytorch_lightning as pl
     from pytorch_lightning.callbacks import ModelCheckpoint
     from pytorch_lightning.loggers import WandbLogger
-    # from pytorch_lightning.tuner import Tuner
     from mmengine.config import DictAction, Config
     
     from dotenv import load_dotenv
+    
     import torch.multiprocessing
     torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -27,8 +27,7 @@ if __name__ == "__main__":
 
 
     start_time = time.time()
-    
-
+    import os
     ################################
     ########## CONFIG ################
     ################################
@@ -77,32 +76,18 @@ if __name__ == "__main__":
     else:
         torch.set_float32_matmul_precision('high') 
     pl.seed_everything(cfg.get('seed', 42), workers=True)
-
-    if cfg.get('logger_type', None) == 'wandb':
-        logger = WandbLogger(**cfg.get('logger_kwargs', {}), config=cfg.to_dict())
-    else:
-        logger = None
     
-
     data_module = CustomDataModule(**cfg.get('datamodule_kwargs', {}))
-    module = CustomModule(tokenizer=data_module.tokenizer, **cfg.get('module_kwargs', {}))
+    module = CustomModule(tokenizer=data_module.tokenizer, **cfg.get('module_kwargs', {}), predict=True)
 
-    ################################
-    ########## Checkpoint #########
-    ################################
-    callbacks = []
-    if cfg.get('checkpoint_callback', False):
-        checkpoint_callback = ModelCheckpoint(**cfg.get('checkpoint_callback_kwargs', {}))
-        callbacks.append(checkpoint_callback)
-        
     ################################
     ########## Train ################
     ################################
     trainer = pl.Trainer(
         strategy=cfg.get('strategy', 'auto'),
         default_root_dir=output_dir,
-        logger=logger,
-        callbacks=callbacks,
+        logger=None,
+        callbacks=[],
         devices=cfg.get('devices', 'auto'),
         num_nodes=cfg.get('num_nodes', 1),
         precision=cfg.get('precision', 32),
@@ -139,7 +124,29 @@ if __name__ == "__main__":
         reload_dataloaders_every_n_epochs=cfg.get('reload_dataloaders_every_n_epochs', 0),
         )
     
-    trainer.fit(module, data_module, ckpt_path=cfg.get('resume_from_checkpoint', None))
-    
-    end_time = time.time()
-    print(f"Total time taken: {end_time-start_time} seconds")
+
+    predictions = trainer.predict(module, data_module, return_predictions=True, ckpt_path=cfg.get('resume_from_checkpoint', None))
+    json.dump(predictions, open(os.path.join(output_dir, f"predictions_rank{torch.distributed.get_rank()}.json"), "w"))
+    torch.distributed.barrier()
+    #
+    predictions = []
+    if torch.distributed.get_rank() == 0:
+        for r in range(0, torch.distributed.get_world_size()):
+            predictions.extend(json.load(open(os.path.join(output_dir, f"predictions_rank{r}.json"), "r"))) 
+        # flatten predictions
+        predictions = [r for batch in predictions for r in batch]
+        json.dump(predictions, open(os.path.join(output_dir, "predictions.json"), "w"))
+        
+        import evaluate
+        metrics = cfg.get('metrics', [])
+        computed_metrics = {}
+        for metric in metrics:
+            metric_fn = evaluate.load(metric)
+            value = metric_fn(references=[r['target'] for r in predictions], predictions=[r['prediction'] for r in predictions])
+            computed_metrics[metric] = value
+        
+
+        print(computed_metrics)
+        json.dump(computed_metrics, open(os.path.join(output_dir, "metrics.json"), "w"))
+        end_time = time.time()
+        print(f"Total time taken: {end_time-start_time} seconds")

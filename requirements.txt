@@ -1,7 +1,13 @@
-transformers==4.28.1
-datasets==2.11.0
-tokenizers==0.12.0
+transformers
+datasets
+tokenizers
+evaluate
+pytorch-lightning
 mmcv-lite
 pandas
 python-dotenv
 wandb
+packaging
+peft
+accelerate
+bitsandbytes
