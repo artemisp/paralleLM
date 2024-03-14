@@ -44,8 +44,19 @@ Update `.env` file
 ## 🔧 Installation
 Setting up an environment for multigpu training is no joke! Things break easily if not executed in the correct order. Here you can find step by step instructions on how to set up the environment. 🛠️
 
-In installing `PyTorch` we assume `CUDA` version 12.0 are compatible with our lab clusters. For other versions see the installation [page](https://pytorch.org/get-started/locally/). 🔥
+In installing `PyTorch` we assume `CUDA` version ~~12.0~~ 12.1 are compatible with our lab clusters. For other versions see the installation [page](https://pytorch.org/get-started/locally/). 🔥
 
+
+```
+>> conda create -n test_me python=3.10
+>> conda activate test_me
+>> conda activate test_me
+>> conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+>> python -m pip install -r requirements.txt
+```
+
+
+📛 `CUDA` version 12.0. Deprecated as of March 14, 2024 since the NVIDIA Drives in nlpgpu got an update.
 ```
 >> conda create -n test_me python=3.10
 >> conda activate test_me
@@ -502,8 +513,6 @@ We welcome contributions from the community! If you have suggestions for new fea
 3. Provide a detailed description of the feature request or the bug you encountered. Include any relevant details, screenshots, or steps to reproduce the issue.
 4. Submit the issue.
 
-
-## License
 
 ## License 📄
 
