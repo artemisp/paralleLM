@@ -11,3 +11,4 @@ packaging
 peft
 accelerate
 bitsandbytes
+wandb
