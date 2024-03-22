@@ -2,7 +2,7 @@ import os
 
 import torch
 from transformers import AutoTokenizer
-from src.data.data_utils import (
+from parallelm.data.data_utils import (
     _remove_html, 
     _pad_punctuation, 
     _filter_na, 

@@ -18,7 +18,7 @@ load_dotenv(os.getcwd()+'/.env')
 cache_dir = os.getenv('CACHE_DIR', "./.cache")
 
 sys.path.append(os.getcwd())
-from src.data.preprocessing import get_inputs_and_targets, tokenize_inputs_and_targets, batch_tokenize_inputs_and_targets
+from parallelm.data.preprocessing import get_inputs_and_targets, tokenize_inputs_and_targets, batch_tokenize_inputs_and_targets
 
 
 class CustomDataset(Dataset):

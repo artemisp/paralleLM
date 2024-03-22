@@ -1,19 +1,17 @@
 if __name__ == "__main__":
     
     import sys
-    import os
-    sys.path.append(os.getcwd())
-    
+    import os    
     import datasets
     datasets.disable_caching()
     
     import pytorch_lightning as pl
     from pytorch_lightning.callbacks import ModelCheckpoint
     from pytorch_lightning.loggers import WandbLogger
+    # from pytorch_lightning.tuner import Tuner
     from mmengine.config import DictAction, Config
     
     from dotenv import load_dotenv
-    
     import torch.multiprocessing
     torch.multiprocessing.set_sharing_strategy('file_system')
 
@@ -22,17 +20,19 @@ if __name__ == "__main__":
     import pprint
     import json
 
-    from src.data.pl_dataloaders import *
-    from src.models.pl_modules import *
+    from parallelm.data.pl_dataloaders import *
+    from parallelm.models.pl_modules import *
 
 
     start_time = time.time()
     import os
+    os.environ['PYTORCH_CUDA_ALLOC_CONF'] = 'max_split_size_mb:21'
+
     ################################
     ########## CONFIG ################
     ################################
     parser = argparse.ArgumentParser()
-    parser.add_argument('--cfg', default=f'{os.getcwd()}/src/configs/train/llama.py', help='path to config file')
+    parser.add_argument('--cfg', default=f'{os.getcwd()}/parallelm/configs/train/llama.py', help='path to config file')
     parser.add_argument("--local_rank", type=int, default=0)
     parser.add_argument('--cfg-options',
                         nargs='+',
@@ -71,23 +71,37 @@ if __name__ == "__main__":
     #####################################
     ########## SETUP ################
     ###################################
-    if '16' in str(cfg.get('precision', '32')):
-        torch.set_float32_matmul_precision('medium')
-    else:
-        torch.set_float32_matmul_precision('high') 
+    # if '16' in str(cfg.get('precision', '32')):
+    #     torch.set_float32_matmul_precision('medium')
+    # else:
+    #     torch.set_float32_matmul_precision('high') 
     pl.seed_everything(cfg.get('seed', 42), workers=True)
-    
-    data_module = CustomDataModule(**cfg.get('datamodule_kwargs', {}))
-    module = CustomModule(tokenizer=data_module.tokenizer, **cfg.get('module_kwargs', {}), predict=True)
 
+    if cfg.get('logger_type', None) == 'wandb':
+        logger = WandbLogger(**cfg.get('logger_kwargs', {}), config=cfg.to_dict())
+    else:
+        logger = None
+    
+
+    data_module = CustomDataModule(**cfg.get('datamodule_kwargs', {}))
+    module = CustomModule(tokenizer=data_module.tokenizer, **cfg.get('module_kwargs', {}))
+
+    ################################
+    ########## Checkpoint #########
+    ################################
+    callbacks = []
+    if cfg.get('checkpoint_callback', False):
+        checkpoint_callback = ModelCheckpoint(**cfg.get('checkpoint_callback_kwargs', {}))
+        callbacks.append(checkpoint_callback)
+        
     ################################
     ########## Train ################
     ################################
     trainer = pl.Trainer(
         strategy=cfg.get('strategy', 'auto'),
         default_root_dir=output_dir,
-        logger=None,
-        callbacks=[],
+        logger=logger,
+        callbacks=callbacks,
         devices=cfg.get('devices', 'auto'),
         num_nodes=cfg.get('num_nodes', 1),
         precision=cfg.get('precision', 32),
@@ -124,29 +138,7 @@ if __name__ == "__main__":
         reload_dataloaders_every_n_epochs=cfg.get('reload_dataloaders_every_n_epochs', 0),
         )
     
-
-    predictions = trainer.predict(module, data_module, return_predictions=True, ckpt_path=cfg.get('resume_from_checkpoint', None))
-    json.dump(predictions, open(os.path.join(output_dir, f"predictions_rank{torch.distributed.get_rank()}.json"), "w"))
-    torch.distributed.barrier()
-    #
-    predictions = []
-    if torch.distributed.get_rank() == 0:
-        for r in range(0, torch.distributed.get_world_size()):
-            predictions.extend(json.load(open(os.path.join(output_dir, f"predictions_rank{r}.json"), "r"))) 
-        # flatten predictions
-        predictions = [r for batch in predictions for r in batch]
-        json.dump(predictions, open(os.path.join(output_dir, "predictions.json"), "w"))
-        
-        import evaluate
-        metrics = cfg.get('metrics', [])
-        computed_metrics = {}
-        for metric in metrics:
-            metric_fn = evaluate.load(metric)
-            value = metric_fn(references=[r['target'] for r in predictions], predictions=[r['prediction'] for r in predictions])
-            computed_metrics[metric] = value
-        
-
-        print(computed_metrics)
-        json.dump(computed_metrics, open(os.path.join(output_dir, "metrics.json"), "w"))
-        end_time = time.time()
-        print(f"Total time taken: {end_time-start_time} seconds")
+    trainer.fit(module, data_module, ckpt_path=cfg.get('resume_from_checkpoint', None))
+    
+    end_time = time.time()
+    print(f"Total time taken: {end_time-start_time} seconds")

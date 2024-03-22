@@ -5,17 +5,16 @@ import transformers
 
 import os
 import sys
-sys.path.append(os.getcwd())
 
 from torch import nn
 from tqdm import tqdm
 from dotenv import load_dotenv
 
-from src.models.soft_embedding import SoftEmbedding
-from src.common.checkpoint_utils import trim_lora, trim_prefix
+from parallelm.models.soft_embedding import SoftEmbedding
+from parallelm.common.checkpoint_utils import trim_lora, trim_prefix
 from transformers import BitsAndBytesConfig, AutoTokenizer, LlamaTokenizer, T5Config, AutoModel
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training, PeftModel
-import src.data.postprocessing as postprocessing
+import parallelm.data.postprocessing as postprocessing
 
 # Load the variables from the .env file
 load_dotenv(os.getcwd()+'/.env')
@@ -315,7 +314,9 @@ class CustomModule(pl.LightningModule):
         if self.optimizer_type == 'Adafactor':
             from transformers import Adafactor
             optimizer = Adafactor(self.trainer.model.parameters(), **self.optimizer_config)
-        
+        if 'bnb' in self.optimizer_type:
+            import bitsandbytes as bnb
+            optimizer = getattr(bnb.optim, self.optimizer_type.split('.')[-1])(self.trainer.model.parameters(), **self.optimizer_config)
         if self.optimizer_config.get('scheduler', None):
             scheduler = getattr(torch.optim.lr_scheduler,scheduler)
             return [optimizer], [scheduler(optimizer, **scheduler_config)]

@@ -12,4 +12,4 @@
 #SBATCH --cpus-per-task=8
 
 
-srun /nlp/data/artemisp/mambaforge/bin/python src/pl_predict.py $@
+srun /nlp/data/artemisp/mambaforge/bin/python pl_predict.py $@

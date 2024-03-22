@@ -13,4 +13,4 @@
 
 cd <path_to_project_folder>
 
-srun /nlp/data/artemisp/mambaforge/bin/python src/pl_ft.py $@
+srun /nlp/data/artemisp/mambaforge/bin/python pl_ft.py $@

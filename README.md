@@ -6,7 +6,7 @@ The codebase is based on top of [`PyTorch Lightning`](https://lightning.ai/docs/
 
 Templates are developed to be compatible with [`balance-my-slurm`](https://github.com/artemisp/balance-my-slurm/tree/main) so check it out! 🧐
 
-An example config file to run is provided in `src/configs/train/llama_mrqa.py`. Make sure to download the data to run it
+An example config file to run is provided in `parallelm/configs/train/llama_mrqa.py`. Make sure to download the data to run it
  You can do so as follows:
 ```
 >> mkdir mrqa
@@ -15,7 +15,7 @@ An example config file to run is provided in `src/configs/train/llama_mrqa.py`. 
 ```
 Then you can train the model by:
 ```
- srun --gpus 1 --nodes 1 --mem-per-cpu 12GB  --constraint 48BGgpu --ntasks-per-node 1 --cpus-per-gpu 10 /nlp/data/artemisp/mambaforge/envs/test_me/bin/python  src/pl_ft.py --cfg /nlp/data/artemisp/multigpu-lm-templates/src/configs/train/llama_mrqa.py
+ srun --gpus 1 --nodes 1 --mem-per-cpu 12GB  --constraint 48BGgpu --ntasks-per-node 1 --cpus-per-gpu 10 /nlp/data/artemisp/mambaforge/envs/test_me/bin/python  parallelm/pl_ft.py --cfg /nlp/data/artemisp/multigpu-lm-templates/parallelm/configs/train/llama_mrqa.py
 ```
 
 <a name="toc"></a>
@@ -53,6 +53,8 @@ In installing `PyTorch` we assume `CUDA` version ~~12.0~~ 12.1 are compatible wi
 >> conda activate test_me
 >> conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
 >> python -m pip install -r requirements.txt
+>> cd ParalleLM 
+>> python -m pip install -e .
 ```
 
 
@@ -63,6 +65,8 @@ In installing `PyTorch` we assume `CUDA` version ~~12.0~~ 12.1 are compatible wi
 >> conda activate test_me
 >> conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia
 >> python -m pip install -r requirements.txt
+>> cd ParalleLM 
+>> python -m pip install -e .
 ```
 
 If you want to use a faster (like a LOT FASTER) package manager built on top
@@ -73,7 +77,7 @@ If you want to use a faster (like a LOT FASTER) package manager built on top
 <a name="skeleton"></a>
 ## 📁 Files and Skeleton
 ```
-├── src
+├── parallelm
 │   ├── common
 │   │   ├── checkpoint_utils.py # utility functions for checkpointing
 │   ├── configs
@@ -101,7 +105,7 @@ Now let's look at each of them in turn:
 ### 📊 Data: The Heart of Your NLP Adventure! 🚀
 This module handles dataloading, preprocessing, and post-processing. 
 
-#### `data/pl_dataloaders.py`
+#### `parallelm.data.pl_dataloaders`
 
 * `CustomDataset`: A subclass of `torch.utils.data.Dataset`, designed for flexible data handling. It supports initialization with datasets in various formats, optional tokenizer integration, and custom preprocessing. It is used by `CustomDataModule`.
 * `CustomDataModule`: Extends `pl.LightningDataModule` to organize data loading, preprocessing, and setup for different phases like training and validation. It supports distributed training and custom tokenization and preprocessing workflows.
@@ -137,17 +141,17 @@ This module handles dataloading, preprocessing, and post-processing.
             batch_size (int, optional): The batch size to use for training and inference. Defaults to `None`.
         """
 
-#### `data/postprocessing.py`
+#### `parallelm.data.postprocessing`
 Define postprocessing functions here. They are accesed in `models.pl_module.CustomModule` prediction step. They can be defined in `datamodule_kwargs` in the config by their name `datamodule_kwargs: {"postproc_fn": <func_name>}`. Each function in postprocessing accepts a single string. 
 
-#### `data/preprocessing.py`
+#### `parallelm.data.preprocessing`
 Define preprocessing functions here. It is used by `data.pl_dataloaders.CustomDataModule` for template formatting, and tokenization. The relevant arguments in the config are `preprocessing_kwargs` and `tokenization_kwargs`.
 
 <a name="data"></a>
 ### Models 🤖
 
 
-#### `models/pl_modules.py`
+#### `parallelm.models.pl_modules`
 *  `CustomModule`: A `lightning` wrapper around a `transformers` model that allows for training in `LoRA` or prefix tuning mode using the implementation from [here](https://github.com/kipgparker/soft-prompt-tuning/blob/main/soft_embedding.py) as well as quantization. It allows for distributed training, and high control of the training processes. The `training_step` method can be adapted for different loss functions if necessary. 
  """
         A PyTorch Lightning module that encapsulates a Hugging Face transformer model
@@ -240,8 +244,8 @@ Define preprocessing functions here. It is used by `data.pl_dataloaders.CustomDa
 Okay.. all good till now, but of course you want to take some control. Don't you worry! A lot of the things you would want to do can simply be achieved by changing a single variable in the config! 
 
 Two example configs are provided in 
-* `/nlp/data/artemisp/multigpu-lm-templates/src/configs/train/llama_mrqa.py`
-* `/nlp/data/artemisp/multigpu-lm-templates/src/configs/base.py`
+* `/nlp/data/artemisp/multigpu-lm-templates/parallelm/configs/train/llama_mrqa.py`
+* `/nlp/data/artemisp/multigpu-lm-templates/parallelm/configs/base.py`
 
 ## General Configuration
 * `output_dir`: Specifies the current working directory of the project. This is used as a base to construct paths for data, outputs, and logs.
@@ -471,11 +475,11 @@ The most important is the `column_dict`. It populates the `input_template`/`targ
 # Ready to train?
 
 You can submit a batch job:
-`sbatch src/slurm_scripts/run_ft.sh --cfg path/to/your/config` to run on 8gpus. and
-`sbatch src/slurm_scripts/run_ft_1gpu.sh --cfg path/to/your/config` to run on one. You can modify the scripts accordingly. 
+`sbatch parallelm/slurm_scripts/run_ft.sh --cfg path/to/your/config` to run on 8gpus. and
+`sbatch parallelm/slurm_scripts/run_ft_1gpu.sh --cfg path/to/your/config` to run on one. You can modify the scripts accordingly. 
 
 For interractive debugging do the following:
-` srun --gpus 1 --nodes 1 --mem-per-cpu 12GB  --constraint 48GBgpu --ntasks-per-node 1 --cpus-per-gpu 10 python  src/pl_ft.py --cfg /path/to/your/config`
+` srun --gpus 1 --nodes 1 --mem-per-cpu 12GB  --constraint 48GBgpu --ntasks-per-node 1 --cpus-per-gpu 10 python  parallelm/pl_ft.py --cfg /path/to/your/config`
 
 
 <a name="evaluate"></a>
@@ -483,7 +487,7 @@ For interractive debugging do the following:
 
 Create a config which defines `resume_From_checkpoint` which is passed in the `module_kwargs` and also on the top level of the config. Then specify your `metrics` and `output_dir`. Finally, either pass a raw dataset with a `predict` split, or specify your prediction split in `datamodule_kwargs`. 
 
-Run `sbatch src/slurm_scripts/run_predict_1gpu.sh --cfg path/to/your/config` to run on one gpu or select the 4gpu script for faster inference. You can modify the scripts accordingly. 
+Run `sbatch parallelm/slurm_scripts/run_predict_1gpu.sh --cfg path/to/your/config` to run on one gpu or select the 4gpu script for faster inference. You can modify the scripts accordingly. 
 
 
 ## How to Cite

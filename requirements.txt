@@ -12,3 +12,4 @@ peft
 accelerate
 bitsandbytes
 wandb
+vissl
