@@ -12,4 +12,4 @@ peft
 accelerate
 bitsandbytes
 wandb
-vissl
+numpy

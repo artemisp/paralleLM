@@ -17,7 +17,6 @@ load_dotenv(os.getcwd()+'/.env')
 # Get the data root dir
 cache_dir = os.getenv('CACHE_DIR', "./.cache")
 
-sys.path.append(os.getcwd())
 from parallelm.data.preprocessing import get_inputs_and_targets, tokenize_inputs_and_targets, batch_tokenize_inputs_and_targets
 
 
@@ -44,8 +43,7 @@ class CustomDataset(Dataset):
         self.kwargs = kwargs
         self.tokenizer = tokenizer
         self.split = split
-       
-        
+
     def __len__(self):
         """
         Returns the length of the dataset.
@@ -75,7 +73,10 @@ class CustomDataset(Dataset):
                                                 # encoder=self.encoder if self.kwargs.get('preprocessing_kwargs', {}).get("context_aware_prefix", False) else None,
                                                 **self.kwargs.get('tokenization_kwargs', {})
                                                 )
-        return sample
+        if self.split != 'train':
+            return sample
+        # return indices to track in training
+        return index, sample
 
 class CustomDataModule(pl.LightningDataModule):
     def __init__(self, tokenizer=None, batch_size=None, **kwargs):
@@ -130,6 +131,9 @@ class CustomDataModule(pl.LightningDataModule):
         self.sampler_state = None 
         
         self.kwargs = kwargs
+        self.current_epoch = 0
+        self.global_step = 0
+        self.effective_batch_size = self.batch_size * max(1, torch.cuda.device_count()) if 'dp' in self.strategy else self.batch_size
 
             
     def preprocess_datasets(self):
@@ -196,16 +200,16 @@ class CustomDataModule(pl.LightningDataModule):
             return
         
         ## dev data
-        if isinstance(kwargs.get('dev_size', .1), float) and kwargs.get('dev_size', .1) <= 1.:
-            dev_size = int(len(self.dataset['train'])*kwargs.get('dev_size', .1))
+        if isinstance(kwargs.get('dev_size', -1), float) and kwargs.get('dev_size', .1) <= 1.:
+            dev_size = int(len(self.dataset['train'])*kwargs.get('dev_size'))
         else:
-            dev_size = kwargs.get('dev_size', .1)
+            dev_size = kwargs.get('dev_size', -1)
+        if "dev" in self.splits:
+            self.dataset['dev'] = self.dataset['dev'].select(range(dev_size))
         if kwargs.get('dev_from_train', -1) > 0:
             self.dataset = self.dataset['train'].train_test_split(test_size=dev_size,shuffle=False)
             self.dataset['dev'] = self.dataset['test']
-        else:
-            if "dev" in self.splits:
-                self.dataset['dev'].shuffle().select(range(dev_size))
+    
         
         ## training size 
         if kwargs.get('tiny', False): 
@@ -307,6 +311,8 @@ class CustomDataModule(pl.LightningDataModule):
             print(f"Loaded {len(getattr(self, f'{split}_dataset'))} datasaet samples for {split} split")
         
     def train_dataloader(self):
+        if 'dp' in self.strategy and torch.cuda.device_count() > 1:
+            self.train_sampler.set_epoch(self.current_epoch)
         return DataLoader(self.train_dataset, sampler=self.train_sampler,  batch_size=self.batch_size, num_workers=self.num_workers,  pin_memory=False)
 
     def val_dataloader(self):

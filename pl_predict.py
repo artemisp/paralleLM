@@ -1,11 +1,6 @@
 if __name__ == "__main__":
-    
-    import sys
+
     import os
-    sys.path.append(os.getcwd())
-    
-    import datasets
-    datasets.disable_caching()
     
     import pytorch_lightning as pl
     from pytorch_lightning.callbacks import ModelCheckpoint

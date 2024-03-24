@@ -48,7 +48,7 @@ In installing `PyTorch` we assume `CUDA` version ~~12.0~~ 12.1 are compatible wi
 
 
 ```
->> conda create -n test_me python=3.10
+>> conda create -n test_me python=3.8
 >> conda activate test_me
 >> conda activate test_me
 >> conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
@@ -58,9 +58,10 @@ In installing `PyTorch` we assume `CUDA` version ~~12.0~~ 12.1 are compatible wi
 ```
 
 
+
 📛 `CUDA` version 12.0. Deprecated as of March 14, 2024 since the NVIDIA Drives in nlpgpu got an update.
 ```
->> conda create -n test_me python=3.10
+>> conda create -n test_me python=3.8
 >> conda activate test_me
 >> conda activate test_me
 >> conda install pytorch torchvision torchaudio pytorch-cuda=11.8 -c pytorch -c nvidia

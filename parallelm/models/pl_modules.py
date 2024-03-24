@@ -125,7 +125,6 @@ class CustomModule(pl.LightningModule):
         self.lora = self.kwargs.get('lora', False)
         self.predict = predict
         self.soft_prompt = self.kwargs.get('prefix_tuning', False)
-
         
     def setup(self, stage):
         super().setup(stage)
@@ -226,6 +225,7 @@ class CustomModule(pl.LightningModule):
         return output
 
     def training_step(self, batch, batch_idx):
+        indices, batch = batch
         if type(batch["input_ids"]) == list:
             batch["input_ids"] = torch.stack(batch["input_ids"]).t()
             batch["attention_mask"] = torch.stack(batch["attention_mask"]).t()
