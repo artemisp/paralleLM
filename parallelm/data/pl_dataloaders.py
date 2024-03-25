@@ -263,6 +263,7 @@ class CustomDataModule(pl.LightningDataModule):
                 
         if kwargs.get('predict_split', None):
             raw_dataset['predict'] =  raw_dataset[kwargs['predict_split']]
+            del raw_dataset[kwargs['predict_split']]
         return raw_dataset
     
     def filter_long_sequences(self, **kwargs):
